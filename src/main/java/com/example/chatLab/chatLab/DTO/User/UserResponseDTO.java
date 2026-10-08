@@ -1,4 +1,4 @@
-package com.example.chatLab.chatLab.DTO.User;
+package com.example.chatLab.chatLab.dto.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

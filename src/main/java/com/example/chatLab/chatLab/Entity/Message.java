@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Messages {
+public class Message {
 
 
 
@@ -23,7 +23,7 @@ public class Messages {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id", nullable = false)
-    private Chats chat;
+    private Chat chat;
 
 
     @ManyToOne(fetch = FetchType.LAZY)
