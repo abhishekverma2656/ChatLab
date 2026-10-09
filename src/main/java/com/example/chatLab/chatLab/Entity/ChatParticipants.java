@@ -22,7 +22,7 @@ public class ChatParticipants {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id", nullable = false)
-    private Chats chat;
+    private Chat chat;
 
 
     @ManyToOne(fetch = FetchType.LAZY)

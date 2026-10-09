@@ -57,5 +57,5 @@ public class User {
 
 
     @OneToMany(mappedBy = "sender")
-    private List<Messages> messages;
+    private List<Message> messages;
 }

@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Chats {
+public class Chat {
 
    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +40,6 @@ public class Chats {
 
 
     @OneToMany(mappedBy = "chat")
-    private List<Messages> messages;
+    private List<Message> messages;
 
 }

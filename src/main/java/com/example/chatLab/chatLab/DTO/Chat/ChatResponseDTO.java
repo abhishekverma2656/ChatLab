@@ -1,4 +1,4 @@
-package com.example.chatLab.chatLab.DTO.Chat;
+package com.example.chatLab.chatLab.dto.Chat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
