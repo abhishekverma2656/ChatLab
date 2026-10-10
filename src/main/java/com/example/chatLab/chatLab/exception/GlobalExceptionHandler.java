@@ -36,7 +36,7 @@ public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(Resource
 
         ErrorResponseDTO error= new ErrorResponseDTO(
                 LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage(),
                 request.getRequestURI()
@@ -51,7 +51,7 @@ public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(Resource
 
         ErrorResponseDTO error= new ErrorResponseDTO(
                 LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage(),
                 request.getRequestURI()
