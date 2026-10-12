@@ -191,4 +191,10 @@ public class AuthService {
             this.attempts = 0;
         }
     }
+    public boolean isRegistered(String phoneNumber) {
+        return userService.existsByPhoneNumber(
+                phoneNumber.trim()
+        );
+    }
+
 }
