@@ -3,7 +3,6 @@ package com.example.chatLab.chatLab.Service;
 
 import com.example.chatLab.chatLab.Entity.User;
 import com.example.chatLab.chatLab.exception.BusinessException;
-import com.example.chatLab.chatLab.exception.ResourceNotFoundException;
 import com.example.chatLab.chatLab.exception.ValidationException;
 
 import org.springframework.stereotype.Service;
