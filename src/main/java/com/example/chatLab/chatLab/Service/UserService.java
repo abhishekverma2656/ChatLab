@@ -106,4 +106,15 @@ public class UserService {
     }
 
 
+    @Transactional(readOnly = true)
+    public boolean existsByPhoneNumber(String phoneNumber) {
+
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new ValidationException("Phone number is required");
+        }
+
+        return userRepository.existsByPhoneNumber(phoneNumber.trim());
+    }
+
+
 }
