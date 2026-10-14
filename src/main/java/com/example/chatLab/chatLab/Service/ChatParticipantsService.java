@@ -188,4 +188,22 @@ public class ChatParticipantsService {
 
         return participantsRepository.save(participant);
     }
+
+    @Transactional(readOnly = true)
+    public boolean isParticipant(Long chatId, Long userId) {
+        if (chatId == null || userId == null) {
+            throw new ValidationException(
+                    "Chat ID and user ID are required"
+            );
+        }
+
+        if (!chatsRepository.existsById(chatId)) {
+            throw new ResourceNotFoundException(
+                    "Chat not found with ID: " + chatId
+            );
+        }
+
+        return participantsRepository
+                .existsByChat_IdAndUser_Id(chatId, userId);
+    }
 }

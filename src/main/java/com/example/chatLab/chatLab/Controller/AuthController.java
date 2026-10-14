@@ -1,6 +1,7 @@
 
 package com.example.chatLab.chatLab.Controller;
 
+import com.example.chatLab.chatLab.Service.JwtService;
 import com.example.chatLab.chatLab.dto.Auth.AuthResponseDTO;
 import com.example.chatLab.chatLab.dto.Auth.LoginRequestDTO;
 import com.example.chatLab.chatLab.dto.Auth.RegisterRequestDTO;
@@ -24,12 +25,14 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
 
     @Value("${app.auth.expose-test-otp:false}")
     private boolean exposeTestOtp;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, JwtService jwtService) {
         this.authService = authService;
+        this.jwtService = jwtService;
     }
 
     // Request OTP
@@ -74,18 +77,23 @@ public class AuthController {
     // Register new user
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDTO> register(
-            @Valid @RequestBody RegisterRequestDTO request
-    ) {
+            @Valid @RequestBody RegisterRequestDTO request) {
+
         User user = authService.registerUser(
                 request.phoneNumber(),
                 request.name()
+        );
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getPhoneNumber()
         );
 
         AuthResponseDTO response = new AuthResponseDTO(
                 "Registration successful",
                 user.getId(),
                 user.getName(),
-                user.getPhoneNumber()
+                user.getPhoneNumber(),
+                token
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -94,15 +102,21 @@ public class AuthController {
     // Login existing user
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(
-            @Valid @RequestBody LoginRequestDTO request
-    ) {
+            @Valid @RequestBody LoginRequestDTO request) {
+
         User user = authService.loginUser(request.phoneNumber());
+
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getPhoneNumber()
+        );
 
         AuthResponseDTO response = new AuthResponseDTO(
                 "Login successful",
                 user.getId(),
                 user.getName(),
-                user.getPhoneNumber()
+                user.getPhoneNumber(),
+                token
         );
 
         return ResponseEntity.ok(response);

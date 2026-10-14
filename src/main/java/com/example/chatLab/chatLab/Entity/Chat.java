@@ -20,7 +20,8 @@ public class Chat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String type;
+ @Column(nullable = false, length = 20)
+ private String type;
 
     @Column(name = "direct_key", unique = true)
     private String directKey;

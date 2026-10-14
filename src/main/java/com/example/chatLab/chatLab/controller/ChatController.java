@@ -1,6 +1,7 @@
 
-package com.example.chatLab.chatLab.controller;
-
+package com.example.chatLab.chatLab.Controller;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.chatLab.chatLab.Entity.Chat;
 import com.example.chatLab.chatLab.Service.ChatService;
 import com.example.chatLab.chatLab.dto.Chat.ChatResponseDTO;
@@ -25,39 +26,87 @@ public class ChatController {
     public ChatResponseDTO getChatById(
             @PathVariable Long chatId) {
 
+        Long currentUserId = getCurrentUserId();
+
+        if (!chatService.isChatParticipant(chatId, currentUserId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "You cannot access this chat"
+            );
+        }
+
         Chat chat = chatService.getChatById(chatId);
 
         return chatMapper.toResponse(chat);
     }
+
 
     // Get all chats of a user
     @GetMapping("/user/{userId}")
     public List<ChatResponseDTO> getUserChats(
             @PathVariable Long userId) {
 
-        return chatService.getUserChats(userId)
+        Long currentUserId = getCurrentUserId();
+
+        if (!currentUserId.equals(userId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "You cannot access another user's chats"
+            );
+        }
+
+        return chatService.getUserChats(currentUserId)
                 .stream()
                 .map(chatMapper::toResponse)
                 .toList();
     }
 
-    // Check whether a user belongs to a chat
+
+// Check whether the current user belongs to a chat
     @GetMapping("/{chatId}/participants/{userId}")
     public boolean isChatParticipant(
             @PathVariable Long chatId,
             @PathVariable Long userId) {
 
-        return chatService.isChatParticipant(chatId, userId);
+        Long currentUserId = getCurrentUserId();
+
+        if (!currentUserId.equals(userId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "You cannot check another user's membership"
+            );
+        }
+
+        return chatService.isChatParticipant(chatId, currentUserId);
     }
+
+
 
 
     @PostMapping("/direct")
     public ChatResponseDTO createOrGetDirectChat(
-            @RequestParam Long userId1,
-            @RequestParam Long userId2) {
+            @RequestParam Long otherUserId) {
 
-        Chat chat = chatService.createOrGetDirectChat(userId1, userId2);
+        Long currentUserId = getCurrentUserId();
+
+        Chat chat = chatService.createOrGetDirectChat(
+                currentUserId,
+                otherUserId
+        );
+
         return chatMapper.toResponse(chat);
+    }
+
+
+
+
+
+
+    private Long getCurrentUserId() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return Long.valueOf(authentication.getName());
     }
 
 }
