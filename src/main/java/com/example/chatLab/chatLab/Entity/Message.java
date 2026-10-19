@@ -31,11 +31,11 @@ public class Message {
     private User sender;
 
 
-    private String content;
+  @Column(nullable = false, length = 5000)
+  private String content;
 
-
-    @Column(name = "message_type")
-    private String messageType;
+  @Column(name = "message_type", nullable = false, length = 20)
+  private String messageType;
 
 
     @Column(name = "created_at")

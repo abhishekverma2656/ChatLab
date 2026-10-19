@@ -62,11 +62,17 @@ public class MessagesService {
             );
         }
 
-        if (messageType == null || messageType.isBlank()) {
+
+        if (messageType == null ||
+                !List.of("TEXT", "IMAGE", "VIDEO")
+                        .contains(messageType.toUpperCase())) {
             throw new ValidationException(
-                    "Message type is required"
+                    "Invalid message type. Allowed types: TEXT, IMAGE, VIDEO"
             );
         }
+
+        messageType = messageType.toUpperCase();
+
 
         Chat chat = chatsRepository.findById(chatId)
                 .orElseThrow(() ->

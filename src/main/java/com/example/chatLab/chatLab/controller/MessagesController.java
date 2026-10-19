@@ -1,6 +1,9 @@
 
-package com.example.chatLab.chatLab.controller;
+package com.example.chatLab.chatLab.Controller;
 
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.chatLab.chatLab.Entity.Message;
 import com.example.chatLab.chatLab.Service.MessagesService;
 import com.example.chatLab.chatLab.dto.Message.MessageRequestDTO;
@@ -21,15 +24,17 @@ public class MessagesController {
     private final MessageMapper messageMapper;
 
     // Send Message
-    @PostMapping("/chat/{chatId}/sender/{senderId}")
+
+    @PostMapping("/chat/{chatId}")
     public MessageResponseDTO sendMessage(
             @PathVariable Long chatId,
-            @PathVariable Long senderId,
             @RequestBody MessageRequestDTO requestDTO) {
+
+        Long currentUserId = getCurrentUserId();
 
         Message message = messagesService.sendMessage(
                 chatId,
-                senderId,
+                currentUserId,
                 requestDTO.getContent(),
                 requestDTO.getMessageType()
         );
@@ -37,27 +42,40 @@ public class MessagesController {
         return messageMapper.toResponse(message);
     }
 
-    // Get Chat Messages with Pagination
+
+
+// Get Chat Messages with Pagination
     @GetMapping("/chat/{chatId}")
     public Page<MessageResponseDTO> getChatMessages(
             @PathVariable Long chatId,
-            @RequestParam Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        Long currentUserId = getCurrentUserId();
+
         Page<Message> messages = messagesService.getChatMessages(
-                chatId, userId, page, size
+                chatId, currentUserId, page, size
         );
 
         return messages.map(messageMapper::toResponse);
     }
 
-    // Delete Own Message
+
+// Delete Own Message
     @DeleteMapping("/{messageId}")
     public void deleteMessage(
-            @PathVariable Long messageId,
-            @RequestParam Long userId) {
+            @PathVariable Long messageId) {
 
-        messagesService.deleteMessage(messageId, userId);
+        Long currentUserId = getCurrentUserId();
+
+        messagesService.deleteMessage(messageId, currentUserId);
+    }
+
+
+    private Long getCurrentUserId() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return Long.valueOf(authentication.getName());
     }
 }
