@@ -1,3 +1,4 @@
+
 package com.example.chatLab.chatLab.Service;
 
 import com.example.chatLab.chatLab.Entity.Chat;
@@ -11,15 +12,16 @@ import com.example.chatLab.chatLab.repository.ChatsRepository;
 import com.example.chatLab.chatLab.repository.MessagesRepository;
 import com.example.chatLab.chatLab.repository.UserRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import java.util.Locale;
 
 @Service
 public class MessagesService {
@@ -49,7 +51,6 @@ public class MessagesService {
             String content,
             String messageType
     ) {
-
         if (chatId == null || senderId == null) {
             throw new ValidationException(
                     "Chat ID and sender ID are required"
@@ -62,17 +63,19 @@ public class MessagesService {
             );
         }
 
+        if (messageType == null || messageType.isBlank()) {
+            throw new ValidationException(
+                    "Message type is required"
+            );
+        }
 
-        if (messageType == null ||
-                !List.of("TEXT", "IMAGE", "VIDEO")
-                        .contains(messageType.toUpperCase())) {
+        messageType = messageType.toUpperCase(Locale.ROOT);
+
+        if (!List.of("TEXT", "IMAGE", "VIDEO").contains(messageType)) {
             throw new ValidationException(
                     "Invalid message type. Allowed types: TEXT, IMAGE, VIDEO"
             );
         }
-
-        messageType = messageType.toUpperCase();
-
 
         Chat chat = chatsRepository.findById(chatId)
                 .orElseThrow(() ->
@@ -112,7 +115,6 @@ public class MessagesService {
 
         chat.setLastMessageAt(now);
         chat.setUpdatedAt(now);
-
         chatsRepository.save(chat);
 
         return savedMessage;
@@ -126,7 +128,6 @@ public class MessagesService {
             int page,
             int size
     ) {
-
         if (chatId == null || userId == null) {
             throw new ValidationException(
                     "Chat ID and user ID are required"
@@ -188,7 +189,6 @@ public class MessagesService {
             Long messageId,
             Long userId
     ) {
-
         if (messageId == null || userId == null) {
             throw new ValidationException(
                     "Message ID and user ID are required"
@@ -202,7 +202,9 @@ public class MessagesService {
                         )
                 );
 
-        if (!message.getSender().getId().equals(userId)) {
+        if (message.getSender() == null
+                || message.getSender().getId() == null
+                || !message.getSender().getId().equals(userId)) {
             throw new BusinessException(
                     "You can only delete your own message"
             );
