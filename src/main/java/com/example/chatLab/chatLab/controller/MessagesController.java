@@ -1,5 +1,5 @@
 
-package com.example.chatLab.chatLab.controller;
+package com.example.chatLab.chatLab.Controller;
 
 import com.example.chatLab.chatLab.Entity.Message;
 import com.example.chatLab.chatLab.Service.MessagesService;

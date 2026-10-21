@@ -1,6 +1,8 @@
 
-package com.example.chatLab.chatLab.controller;
+package com.example.chatLab.chatLab.Controller;
 
+
+import com.example.chatLab.chatLab.dto.ChatListResponseDTO.ChatListResponseDTO;
 import com.example.chatLab.chatLab.Entity.Chat;
 import com.example.chatLab.chatLab.Service.ChatService;
 import com.example.chatLab.chatLab.dto.Chat.ChatResponseDTO;
@@ -58,6 +60,13 @@ public class ChatController {
 
         Chat chat = chatService.createOrGetDirectChat(userId1, userId2);
         return chatMapper.toResponse(chat);
+    }
+
+    @GetMapping("/user/{userId}/list")
+    public List<ChatListResponseDTO> getUserChatList(
+            @PathVariable Long userId
+    ) {
+        return chatService.getUserChatList(userId);
     }
 
 }

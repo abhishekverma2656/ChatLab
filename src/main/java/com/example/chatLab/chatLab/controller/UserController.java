@@ -1,4 +1,4 @@
-package com.example.chatLab.chatLab.controller;
+package com.example.chatLab.chatLab.Controller;
 
 
 

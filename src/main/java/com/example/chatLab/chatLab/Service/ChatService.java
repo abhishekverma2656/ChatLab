@@ -1,5 +1,10 @@
 package com.example.chatLab.chatLab.Service;
 
+import com.example.chatLab.chatLab.Entity.Message;
+import com.example.chatLab.chatLab.dto.ChatListResponseDTO.ChatListResponseDTO;
+
+
+import com.example.chatLab.chatLab.repository.MessagesRepository;
 import com.example.chatLab.chatLab.Entity.Chat;
 import com.example.chatLab.chatLab.Entity.ChatParticipants;
 import com.example.chatLab.chatLab.Entity.User;
@@ -23,14 +28,16 @@ public class ChatService {
     private final ChatParticipantsRepository participantsRepository;
     private final UserRepository userRepository;
 
+    private final MessagesRepository messagesRepository;
     public ChatService(
             ChatsRepository chatsRepository,
             ChatParticipantsRepository participantsRepository,
-            UserRepository userRepository
+            UserRepository userRepository, MessagesRepository messagesRepository
     ) {
         this.chatsRepository = chatsRepository;
         this.participantsRepository = participantsRepository;
         this.userRepository = userRepository;
+        this.messagesRepository = messagesRepository;
     }
 
     // Create a new direct chat or return the existing one
@@ -170,5 +177,74 @@ public class ChatService {
 
         return participantsRepository
                 .existsByChat_IdAndUser_Id(chatId, userId);
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<ChatListResponseDTO> getUserChatList(Long userId) {
+
+        if (userId == null) {
+            throw new ValidationException("User ID is required");
+        }
+
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "User not found with ID: " + userId
+            );
+        }
+
+        return participantsRepository.findAllByUser_Id(userId)
+                .stream()
+                .map(participant -> {
+                    Chat chat = participant.getChat();
+
+                    // Find the other participant in this chat
+                    ChatParticipants otherParticipant =
+                            participantsRepository.findAllByChat_Id(chat.getId())
+                                    .stream()
+                                    .filter(p -> !p.getUser().getId().equals(userId))
+                                    .findFirst()
+                                    .orElse(null);
+
+                    Long otherUserId = otherParticipant != null
+                            ? otherParticipant.getUser().getId()
+                            : null;
+
+                    String otherUserName = otherParticipant != null
+                            ? otherParticipant.getUser().getName()
+                            : ( "GROUP".equalsIgnoreCase(chat.getType())
+                                ? "Group chat"
+                                : "Unknown user" );
+
+                    // Fetch the latest message
+                    var latestMessage =
+                            messagesRepository
+                                    .findFirstByChat_IdOrderByCreatedAtDesc(
+                                            chat.getId()
+                                    );
+
+                    String lastMessage = latestMessage
+                            .map(Message::getContent)
+                            .orElse("No messages yet");
+
+                    var lastMessageAt = latestMessage
+                            .map(Message::getCreatedAt)
+                            .orElse(chat.getLastMessageAt());
+
+                    return new ChatListResponseDTO(
+                            chat.getId(),
+                            chat.getType(),
+                            otherUserId,
+                            otherUserName,
+                            lastMessage,
+                            lastMessageAt
+                    );
+                })
+                .sorted((a, b) -> {
+                    if (a.getLastMessageAt() == null) return 1;
+                    if (b.getLastMessageAt() == null) return -1;
+                    return b.getLastMessageAt().compareTo(a.getLastMessageAt());
+                })
+                .toList();
     }
 }
