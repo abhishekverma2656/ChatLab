@@ -4,5 +4,6 @@ public record AuthResponseDTO(
         String message,
         Long userId,
         String name,
-        String phoneNumber
+        String phoneNumber,
+        String token
 ) {}
