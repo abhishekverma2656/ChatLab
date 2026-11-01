@@ -30,17 +30,19 @@ public class MessagesService {
     private final ChatsRepository chatsRepository;
     private final UserRepository userRepository;
     private final ChatParticipantsRepository participantsRepository;
+    private final EncryptionService encryptionService;
 
     public MessagesService(
             MessagesRepository messagesRepository,
             ChatsRepository chatsRepository,
             UserRepository userRepository,
-            ChatParticipantsRepository participantsRepository
+            ChatParticipantsRepository participantsRepository, EncryptionService encryptionService
     ) {
         this.messagesRepository = messagesRepository;
         this.chatsRepository = chatsRepository;
         this.userRepository = userRepository;
         this.participantsRepository = participantsRepository;
+        this.encryptionService = encryptionService;
     }
 
     // Send Message
@@ -106,7 +108,7 @@ public class MessagesService {
         Message message = Message.builder()
                 .chat(chat)
                 .sender(sender)
-                .content(content)
+                .content(encryptionService.encrypt(content))
                 .messageType(messageType)
                 .createdAt(now)
                 .build();
