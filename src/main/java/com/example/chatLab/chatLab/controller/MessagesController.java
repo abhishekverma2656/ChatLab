@@ -2,6 +2,7 @@
 package com.example.chatLab.chatLab.Controller;
 
 
+import com.example.chatLab.chatLab.Service.EncryptionService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.chatLab.chatLab.Entity.Message;
@@ -22,6 +23,7 @@ public class MessagesController {
 
     private final MessagesService messagesService;
     private final MessageMapper messageMapper;
+    private final EncryptionService encryptionService;
 
     // Send Message
 
@@ -39,7 +41,10 @@ public class MessagesController {
                 requestDTO.getMessageType()
         );
 
-        return messageMapper.toResponse(message);
+        MessageResponseDTO response = messageMapper.toResponse(message);
+        response.setContent(encryptionService.decrypt(message.getContent()));
+
+        return response;
     }
 
 
@@ -57,7 +62,11 @@ public class MessagesController {
                 chatId, currentUserId, page, size
         );
 
-        return messages.map(messageMapper::toResponse);
+        return messages.map(message -> {
+            MessageResponseDTO response = messageMapper.toResponse(message);
+            response.setContent(encryptionService.decrypt(message.getContent()));
+            return response;
+        });
     }
 
 

@@ -27,16 +27,18 @@ public class ChatService {
     private final ChatsRepository chatsRepository;
     private final ChatParticipantsRepository participantsRepository;
     private final UserRepository userRepository;
+    private final EncryptionService encryptionService;
 
     private final MessagesRepository messagesRepository;
     public ChatService(
             ChatsRepository chatsRepository,
             ChatParticipantsRepository participantsRepository,
-            UserRepository userRepository, MessagesRepository messagesRepository
+            UserRepository userRepository, EncryptionService encryptionService, MessagesRepository messagesRepository
     ) {
         this.chatsRepository = chatsRepository;
         this.participantsRepository = participantsRepository;
         this.userRepository = userRepository;
+        this.encryptionService = encryptionService;
         this.messagesRepository = messagesRepository;
     }
 
@@ -225,6 +227,7 @@ public class ChatService {
 
                     String lastMessage = latestMessage
                             .map(Message::getContent)
+                            .map(encryptionService::decrypt)
                             .orElse("No messages yet");
 
                     var lastMessageAt = latestMessage
