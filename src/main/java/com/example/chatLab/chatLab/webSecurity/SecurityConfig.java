@@ -1,3 +1,4 @@
+
 package com.example.chatLab.chatLab.webSecurity;
 
 import org.springframework.context.annotation.Bean;
@@ -9,9 +10,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -36,8 +40,14 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/send-otp",
-                                "/api/auth/verify-otp"
+                                "/api/auth/verify-otp",
+
+                                // Allow WebSocket HTTP handshake
+                                "/ws",
+                                "/ws/**"
                         ).permitAll()
+
+                        // All REST APIs remain protected
                         .anyRequest().authenticated()
                 )
 
