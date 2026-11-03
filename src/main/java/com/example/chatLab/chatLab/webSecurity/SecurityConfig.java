@@ -42,6 +42,9 @@ public class SecurityConfig {
                                 "/api/auth/send-otp",
                                 "/api/auth/verify-otp",
 
+
+                                "/api/users/profile-images/**",
+
                                 // Allow WebSocket HTTP handshake
                                 "/ws",
                                 "/ws/**"

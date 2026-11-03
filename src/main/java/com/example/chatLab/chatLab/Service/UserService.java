@@ -116,5 +116,16 @@ public class UserService {
         return userRepository.existsByPhoneNumber(phoneNumber.trim());
     }
 
+    // Update Profile Image
+    @Transactional
+    public User updateProfileImage(Long id, String profileImage) {
+        User user = getUserById(id);
+
+        user.setProfileImage(profileImage);
+        user.setUpdatedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
+    }
+
 
 }
