@@ -14,6 +14,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -41,8 +48,8 @@ public class UserController {
         Long currentUserId = getCurrentUserId();
 
         if (!currentUserId.equals(id)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.FORBIDDEN,
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
                     "You cannot access another user's profile"
             );
         }
@@ -62,8 +69,8 @@ public class UserController {
         User user = userService.getUserByPhoneNumber(phoneNumber);
 
         if (currentUserId.equals(user.getId())) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.BAD_REQUEST,
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
                     "You cannot search for yourself"
             );
         }
@@ -80,8 +87,8 @@ public class UserController {
         Long currentUserId = getCurrentUserId();
 
         if (!currentUserId.equals(id)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.FORBIDDEN,
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
                     "You cannot update another user's profile"
             );
         }
@@ -111,5 +118,8 @@ public class UserController {
 
         return Long.valueOf(authentication.getName());
     }
+
+
+
 }
 
