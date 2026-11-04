@@ -1,10 +1,14 @@
+
 package com.example.chatLab.chatLab.Service;
 
+import com.example.chatLab.chatLab.Entity.Chat;
+import com.example.chatLab.chatLab.Entity.ChatParticipants;
 import com.example.chatLab.chatLab.Entity.Contact;
 import com.example.chatLab.chatLab.Entity.User;
 import com.example.chatLab.chatLab.exception.BusinessException;
 import com.example.chatLab.chatLab.exception.ResourceNotFoundException;
 import com.example.chatLab.chatLab.exception.ValidationException;
+import com.example.chatLab.chatLab.repository.ChatParticipantsRepository;
 import com.example.chatLab.chatLab.repository.ContactsRepository;
 import com.example.chatLab.chatLab.repository.UserRepository;
 
@@ -12,25 +16,115 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ContactService {
 
     private final ContactsRepository contactsRepository;
     private final UserRepository userRepository;
+    private final ChatParticipantsRepository participantsRepository;
 
     public ContactService(
             ContactsRepository contactsRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ChatParticipantsRepository participantsRepository
     ) {
         this.contactsRepository = contactsRepository;
         this.userRepository = userRepository;
+        this.participantsRepository = participantsRepository;
     }
 
-    // Add Contact
+    // Get all users with whom the logged-in user has chatted
+    @Transactional(readOnly = true)
+    public List<Contact> getMyContacts(Long ownerId) {
+
+        if (ownerId == null) {
+            throw new ValidationException("Owner ID is required");
+        }
+
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found with ID: " + ownerId
+                        )
+                );
+
+        // Get existing private saved names
+        Map<Long, Contact> savedContacts = new LinkedHashMap<>();
+
+        contactsRepository.findAllByOwner_Id(ownerId)
+                .forEach(contact ->
+                        savedContacts.put(
+                                contact.getContactUser().getId(),
+                                contact
+                        )
+                );
+
+        // Get all chats of logged-in user
+        List<ChatParticipants> myParticipations =
+                participantsRepository.findAllByUser_Id(ownerId);
+
+        // Store unique users
+        Map<Long, Contact> contactMap = new LinkedHashMap<>();
+
+        for (ChatParticipants myParticipation : myParticipations) {
+
+            Chat chat = myParticipation.getChat();
+
+            List<ChatParticipants> participants =
+                    participantsRepository.findAllByChat_Id(chat.getId());
+
+            for (ChatParticipants participant : participants) {
+
+                User otherUser = participant.getUser();
+
+                // Exclude logged-in user
+                if (otherUser.getId().equals(ownerId)) {
+                    continue;
+                }
+
+                Long otherUserId = otherUser.getId();
+
+                // Avoid duplicate contacts
+                if (contactMap.containsKey(otherUserId)) {
+                    continue;
+                }
+
+                Contact savedContact = savedContacts.get(otherUserId);
+
+                if (savedContact != null) {
+                    // Use user's private saved name
+                    contactMap.put(otherUserId, savedContact);
+                } else {
+                    // No saved name: show original profile name
+                    Contact temporaryContact = Contact.builder()
+                            .owner(owner)
+                            .contactUser(otherUser)
+                            .savedName(otherUser.getName())
+                            .build();
+
+                    // This object is NOT saved in database
+                    contactMap.put(otherUserId, temporaryContact);
+                }
+            }
+        }
+
+        return contactMap.values()
+                .stream()
+                .sorted(Comparator.comparing(
+                        Contact::getSavedName,
+                        String.CASE_INSENSITIVE_ORDER
+                ))
+                .toList();
+    }
+
+    // Update name or create private contact record for the first time
     @Transactional
-    public Contact addContact(
+    public Contact updateContactName(
             Long ownerId,
             Long contactUserId,
             String savedName
@@ -50,7 +144,7 @@ public class ContactService {
 
         if (ownerId.equals(contactUserId)) {
             throw new BusinessException(
-                    "You cannot add yourself as a contact"
+                    "You cannot edit your own contact name"
             );
         }
 
@@ -64,70 +158,22 @@ public class ContactService {
         User contactUser = userRepository.findById(contactUserId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Contact user not found with ID: "
-                                        + contactUserId
+                                "Contact user not found with ID: " + contactUserId
                         )
                 );
 
-        if (contactsRepository
-                .existsByOwner_IdAndContactUser_Id(
-                        ownerId, contactUserId)) {
-            throw new BusinessException(
-                    "Contact is already saved"
-            );
-        }
-
-        Contact contact = Contact.builder()
-                .owner(owner)
-                .contactUser(contactUser)
-                .savedName(savedName.trim())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        return contactsRepository.save(contact);
-    }
-
-    // Get My Contacts
-    @Transactional(readOnly = true)
-    public List<Contact> getMyContacts(Long ownerId) {
-
-        if (ownerId == null) {
-            throw new ValidationException(
-                    "Owner ID is required"
-            );
-        }
-
-        if (!userRepository.existsById(ownerId)) {
-            throw new ResourceNotFoundException(
-                    "User not found with ID: " + ownerId
-            );
-        }
-
-        return contactsRepository.findAllByOwner_Id(ownerId);
-    }
-
-    // Update Saved Contact Name
-    @Transactional
-    public Contact updateContactName(
-            Long ownerId,
-            Long contactUserId,
-            String savedName
-    ) {
-
-        if (savedName == null || savedName.isBlank()) {
-            throw new ValidationException(
-                    "Saved contact name is required"
-            );
-        }
-
+        // Check whether a record already exists
         Contact contact = contactsRepository
                 .findByOwner_IdAndContactUser_Id(
-                        ownerId, contactUserId
+                        ownerId,
+                        contactUserId
                 )
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Contact not found in your contact list"
-                        )
+                .orElseGet(() ->
+                        Contact.builder()
+                                .owner(owner)
+                                .contactUser(contactUser)
+                                .createdAt(LocalDateTime.now())
+                                .build()
                 );
 
         contact.setSavedName(savedName.trim());
@@ -135,7 +181,7 @@ public class ContactService {
         return contactsRepository.save(contact);
     }
 
-    // Remove Contact
+    // Reset private name: original profile name will appear again
     @Transactional
     public void removeContact(
             Long ownerId,
@@ -144,14 +190,16 @@ public class ContactService {
 
         Contact contact = contactsRepository
                 .findByOwner_IdAndContactUser_Id(
-                        ownerId, contactUserId
+                        ownerId,
+                        contactUserId
                 )
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Contact not found in your contact list"
-                        )
-                );
+                .orElse(null);
 
-        contactsRepository.delete(contact);
+        if (contact != null) {
+            contactsRepository.delete(contact);
+        }
+
+        // User will still appear in contacts because chat exists.
+        // Only the private saved name is removed.
     }
 }

@@ -14,12 +14,14 @@ import com.example.chatLab.chatLab.exception.ValidationException;
 import com.example.chatLab.chatLab.repository.ChatParticipantsRepository;
 import com.example.chatLab.chatLab.repository.ChatsRepository;
 import com.example.chatLab.chatLab.repository.UserRepository;
+import com.example.chatLab.chatLab.repository.ContactsRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.example.chatLab.chatLab.Entity.Contact;
 
 @Service
 public class ChatService {
@@ -30,16 +32,19 @@ public class ChatService {
     private final EncryptionService encryptionService;
 
     private final MessagesRepository messagesRepository;
+
+    private final ContactsRepository contactsRepository;
     public ChatService(
             ChatsRepository chatsRepository,
             ChatParticipantsRepository participantsRepository,
-            UserRepository userRepository, EncryptionService encryptionService, MessagesRepository messagesRepository
+            UserRepository userRepository, EncryptionService encryptionService, MessagesRepository messagesRepository,ContactsRepository contactsRepository
     ) {
         this.chatsRepository = chatsRepository;
         this.participantsRepository = participantsRepository;
         this.userRepository = userRepository;
         this.encryptionService = encryptionService;
         this.messagesRepository = messagesRepository;
+        this.contactsRepository = contactsRepository;
     }
 
     // Create a new direct chat or return the existing one
@@ -198,9 +203,10 @@ public class ChatService {
         return participantsRepository.findAllByUser_Id(userId)
                 .stream()
                 .map(participant -> {
+
                     Chat chat = participant.getChat();
 
-                    // Find the other participant in this chat
+                    // Find the other participant
                     ChatParticipants otherParticipant =
                             participantsRepository.findAllByChat_Id(chat.getId())
                                     .stream()
@@ -212,13 +218,30 @@ public class ChatService {
                             ? otherParticipant.getUser().getId()
                             : null;
 
-                    String otherUserName = otherParticipant != null
-                            ? otherParticipant.getUser().getName()
-                            : ( "GROUP".equalsIgnoreCase(chat.getType())
-                                ? "Group chat"
-                                : "Unknown user" );
+                    String otherUserName = "GROUP".equalsIgnoreCase(chat.getType())
+                            ? "Group chat"
+                            : "Unknown user";
 
-                    // Fetch the latest message
+                    // Get original name and user's private saved name
+                    if (otherParticipant != null) {
+
+                        User otherUser = otherParticipant.getUser();
+
+                        String originalName = otherUser.getName();
+
+                        otherUserName = contactsRepository
+                                .findByOwner_IdAndContactUser_Id(
+                                        userId,
+                                        otherUser.getId()
+                                )
+                                .map(Contact::getSavedName)
+                                .filter(savedName ->
+                                        savedName != null && !savedName.isBlank()
+                                )
+                                .orElse(originalName);
+                    }
+
+                    // Fetch latest message
                     var latestMessage =
                             messagesRepository
                                     .findFirstByChat_IdOrderByCreatedAtDesc(
@@ -242,11 +265,14 @@ public class ChatService {
                             lastMessage,
                             lastMessageAt
                     );
+
                 })
                 .sorted((a, b) -> {
                     if (a.getLastMessageAt() == null) return 1;
                     if (b.getLastMessageAt() == null) return -1;
-                    return b.getLastMessageAt().compareTo(a.getLastMessageAt());
+
+                    return b.getLastMessageAt()
+                            .compareTo(a.getLastMessageAt());
                 })
                 .toList();
     }
