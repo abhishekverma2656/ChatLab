@@ -1,13 +1,13 @@
+
 package com.example.chatLab.chatLab.Service;
 
 import com.example.chatLab.chatLab.Entity.Message;
 import com.example.chatLab.chatLab.dto.ChatListResponseDTO.ChatListResponseDTO;
-
-
 import com.example.chatLab.chatLab.repository.MessagesRepository;
 import com.example.chatLab.chatLab.Entity.Chat;
 import com.example.chatLab.chatLab.Entity.ChatParticipants;
 import com.example.chatLab.chatLab.Entity.User;
+import com.example.chatLab.chatLab.Entity.Contact;
 import com.example.chatLab.chatLab.exception.BusinessException;
 import com.example.chatLab.chatLab.exception.ResourceNotFoundException;
 import com.example.chatLab.chatLab.exception.ValidationException;
@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.example.chatLab.chatLab.Entity.Contact;
 
 @Service
 public class ChatService {
@@ -30,14 +29,16 @@ public class ChatService {
     private final ChatParticipantsRepository participantsRepository;
     private final UserRepository userRepository;
     private final EncryptionService encryptionService;
-
     private final MessagesRepository messagesRepository;
-
     private final ContactsRepository contactsRepository;
+
     public ChatService(
             ChatsRepository chatsRepository,
             ChatParticipantsRepository participantsRepository,
-            UserRepository userRepository, EncryptionService encryptionService, MessagesRepository messagesRepository,ContactsRepository contactsRepository
+            UserRepository userRepository,
+            EncryptionService encryptionService,
+            MessagesRepository messagesRepository,
+            ContactsRepository contactsRepository
     ) {
         this.chatsRepository = chatsRepository;
         this.participantsRepository = participantsRepository;
@@ -52,15 +53,11 @@ public class ChatService {
     public Chat createOrGetDirectChat(Long userId1, Long userId2) {
 
         if (userId1 == null || userId2 == null) {
-            throw new ValidationException(
-                    "Both user IDs are required"
-            );
+            throw new ValidationException("Both user IDs are required");
         }
 
         if (userId1.equals(userId2)) {
-            throw new BusinessException(
-                    "You cannot create a chat with yourself"
-            );
+            throw new BusinessException("You cannot create a chat with yourself");
         }
 
         User user1 = userRepository.findById(userId1)
@@ -125,9 +122,7 @@ public class ChatService {
     public Chat getChatById(Long chatId) {
 
         if (chatId == null) {
-            throw new ValidationException(
-                    "Chat ID is required"
-            );
+            throw new ValidationException("Chat ID is required");
         }
 
         return chatsRepository.findById(chatId)
@@ -143,9 +138,7 @@ public class ChatService {
     public List<Chat> getUserChats(Long userId) {
 
         if (userId == null) {
-            throw new ValidationException(
-                    "User ID is required"
-            );
+            throw new ValidationException("User ID is required");
         }
 
         if (!userRepository.existsById(userId)) {
@@ -186,7 +179,7 @@ public class ChatService {
                 .existsByChat_IdAndUser_Id(chatId, userId);
     }
 
-
+    // Get chat list for a user, including other participant's profile image
     @Transactional(readOnly = true)
     public List<ChatListResponseDTO> getUserChatList(Long userId) {
 
@@ -222,7 +215,9 @@ public class ChatService {
                             ? "Group chat"
                             : "Unknown user";
 
-                    // Get original name and user's private saved name
+                    String otherUserProfileImage = null;
+
+                    // Get original name, saved contact name and profile image
                     if (otherParticipant != null) {
 
                         User otherUser = otherParticipant.getUser();
@@ -239,6 +234,8 @@ public class ChatService {
                                         savedName != null && !savedName.isBlank()
                                 )
                                 .orElse(originalName);
+
+                        otherUserProfileImage = otherUser.getProfileImage();
                     }
 
                     // Fetch latest message
@@ -263,7 +260,8 @@ public class ChatService {
                             otherUserId,
                             otherUserName,
                             lastMessage,
-                            lastMessageAt
+                            lastMessageAt,
+                            otherUserProfileImage
                     );
 
                 })
