@@ -17,4 +17,7 @@ public class ContactResponseDTO {
     private Long contactUserId;
     private String savedName;
     private LocalDateTime createdAt;
+    private String contactName;
+    private String phoneNumber;
+    private String profileImage;
 }

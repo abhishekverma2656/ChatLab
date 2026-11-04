@@ -25,8 +25,8 @@ public class ContactController {
     private final ContactService contactService;
     private final ContactMapper contactMapper;
 
-    // Get authenticated user's ID from Spring Security
     private Long getCurrentUserId() {
+
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -34,6 +34,7 @@ public class ContactController {
                 || !authentication.isAuthenticated()
                 || authentication.getName() == null
                 || authentication.getName().equals("anonymousUser")) {
+
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "User is not authenticated"
@@ -42,7 +43,9 @@ public class ContactController {
 
         try {
             return Long.valueOf(authentication.getName());
+
         } catch (NumberFormatException exception) {
+
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Invalid authenticated user ID"
@@ -50,44 +53,11 @@ public class ContactController {
         }
     }
 
-    // Add Contact
-    @PostMapping("/{ownerId}/{contactUserId}")
-    public ContactResponseDTO addContact(
-            @PathVariable Long ownerId,
-            @PathVariable Long contactUserId,
-            @RequestBody ContactRequestDTO requestDTO
-    ) {
+    // Get all chat participants as contacts
+    @GetMapping
+    public List<ContactResponseDTO> getMyContacts() {
+
         Long currentUserId = getCurrentUserId();
-
-        if (!currentUserId.equals(ownerId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You can only add contacts to your own contact list"
-            );
-        }
-
-        Contact contact = contactService.addContact(
-                currentUserId,
-                contactUserId,
-                requestDTO.getSavedName()
-        );
-
-        return contactMapper.toResponse(contact);
-    }
-
-    // Get My Contacts
-    @GetMapping("/{ownerId}")
-    public List<ContactResponseDTO> getMyContacts(
-            @PathVariable Long ownerId
-    ) {
-        Long currentUserId = getCurrentUserId();
-
-        if (!currentUserId.equals(ownerId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You can only view your own contacts"
-            );
-        }
 
         return contactService.getMyContacts(currentUserId)
                 .stream()
@@ -95,21 +65,14 @@ public class ContactController {
                 .toList();
     }
 
-    // Update Saved Contact Name
-    @PutMapping("/{ownerId}/{contactUserId}")
+    // Update or create private saved name
+    @PutMapping("/{contactUserId}")
     public ContactResponseDTO updateContactName(
-            @PathVariable Long ownerId,
             @PathVariable Long contactUserId,
             @RequestBody ContactRequestDTO requestDTO
     ) {
-        Long currentUserId = getCurrentUserId();
 
-        if (!currentUserId.equals(ownerId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You can only update your own contacts"
-            );
-        }
+        Long currentUserId = getCurrentUserId();
 
         Contact contact = contactService.updateContactName(
                 currentUserId,
@@ -120,21 +83,18 @@ public class ContactController {
         return contactMapper.toResponse(contact);
     }
 
-    // Remove Contact
-    @DeleteMapping("/{ownerId}/{contactUserId}")
+    // Reset private saved name
+    @DeleteMapping("/{contactUserId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeContact(
-            @PathVariable Long ownerId,
             @PathVariable Long contactUserId
     ) {
+
         Long currentUserId = getCurrentUserId();
 
-        if (!currentUserId.equals(ownerId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "You can only remove contacts from your own contact list"
-            );
-        }
-
-        contactService.removeContact(currentUserId, contactUserId);
+        contactService.removeContact(
+                currentUserId,
+                contactUserId
+        );
     }
 }
