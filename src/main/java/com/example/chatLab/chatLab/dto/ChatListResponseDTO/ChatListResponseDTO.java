@@ -25,4 +25,6 @@ public class ChatListResponseDTO {
     private String lastMessage;
 
     private LocalDateTime lastMessageAt;
+
+    private String profileImage;
 }

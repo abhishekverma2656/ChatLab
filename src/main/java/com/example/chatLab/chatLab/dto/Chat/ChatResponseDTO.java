@@ -18,4 +18,5 @@ public class ChatResponseDTO {
     private LocalDateTime lastMessageAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String profileImage;
 }
